@@ -1,0 +1,47 @@
+---
+# Estabelece o host que vai ser executado
+- hosts: localhost
+  # Estabelece a conexão como local
+  connection: local
+  # Executa a chamada das regras
+  roles:
+  - { role: keypair, tags: [ 'keypairs', 'infra' ] }
+  - { role: vpc, tags: [ 'vpc', 'infra', 'always' ] }
+  - { role: ec2-app, tags: [ 'ec2-app', 'infra' ] }
+# Encontra por instancias com a tag app
+- hosts: tag_Name_app
+  # Não busca por informações do Sistema operacional
+  gather_facts: no
+  # Estabelece as tarefas que vão ser executadas antes do comando role abaixo
+  pre_tasks:
+    # Estabelece o nome da tarefa que vai ser executada
+    - name: instala o Python 2
+      # Realiza o comando  no shell do servidor para averiguar se o python esta instalado, se não estiver, instala.
+      raw: sudo bash -c "test -e /usr/bin/python || (apt -y update && apt install -y python-minimal aptitude)"
+      # Produz uma tag aonde todos os locais que tiverem essas tags vão ser executadas
+      tags: [ 'always' ]
+      # Estabelece o nome da tarefa a ser executada
+    - name: reune informacoes sobre o sistema operacional
+      # Reune as informações do Sistema operacional
+      setup:
+      # Produz uma tag aonde todos os locais que tiverem essas tags vão ser executadas
+      tags: [ 'always' ]
+      # Estabelece o nome da tarefa que vai ser executada
+
+    - name: atualiza os pacotes do SO
+      # Utiliza o modulo apt
+      apt:
+        # Efetua o apt-get upgrade
+        upgrade: yes
+        # Efetua um apt-get update
+        update_cache: yes
+        # atualiza o cache se o tempo estiver esgotado
+        cache_valid_time: 3600
+      # Elabora uma tag onde todos os locais que possuirem essas tags vão ser executadas  
+      tags: [ 'app' ]
+  # Estabelece as regras após a pré task
+  roles:
+    # Instala o Docker
+    - { role: docker, tags: [ 'docker' ] }
+    # Instala o Wordpress
+    - { role: wordpress, tags: [ 'app', 'wordpress' ] }
